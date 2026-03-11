@@ -1,1 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Questionnaire – Cadrage pour un usage d'IA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --accent: #e8622a;
+    --accent2: #2a6ee8;
+    --muted: #8a8070;
+    --border: #d4c9b8;
+    --success: #2a8e5a;
+    --card: #faf7f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; padding: 0 0 80px; }
+
+  /* Header */
+  .site-header { background: var(--ink); padding: 32px 40px; display: flex; align-items: flex-end; gap: 24px; position: relative; overflow: hidden; }
+  .site-header::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(255,255,255,0.03) 12px, rgba(255,255,255,0.03) 13px); pointer-events: none; }
+  .header-badge { background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 12px; border-radius: 2px; position: relative; }
+  .site-header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(22px, 4vw, 38px); color: #fff; font-weight: 400; line-height: 1.15; position: relative; }
+  .site-header h1 em { color: var(--accent); font-style: italic; }
+
+  /* Progress */
+  .progress-wrap { background: var(--ink); padding: 0 40px 20px; }
+  .progress-bar-bg { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s ease; width: 0%; }
+  .progress-label { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 8px; letter-spacing: 0.04em; }
+
+  /* Layout */
+  .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+  .steps { padding-top: 48px; }
+
+  /* Steps: hidden by default, shown when .active */
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .section-num { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .section-title { font-family: 'DM Serif Display', serif; font-size: clamp(20px, 3.5vw, 30px); color: var(--ink); font-weight: 400; line-height: 1.2; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; margin-bottom: 20px; }
+  .field-label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 10px; text-transform: uppercase; }
+
+  textarea, input[type="text"] { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 5px; padding: 14px 16px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 300; color: var(--ink); resize: vertical; transition: border-color 0.2s; outline: none; }
+  textarea:focus, input[type="text"]:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(42,110,232,0.1); }
+  textarea { min-height: 100px; }
+
+  /* Checkboxes — pure div-based, no <label> conflicts */
+  .check-group { display: flex; flex-direction: column; gap: 8px; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 6px;
+    border: 1.5px solid var(--border); background: #fff;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .check-item:hover { background: #eef3fd; border-color: rgba(42,110,232,0.3); }
+  .check-item.is-checked { background: rgba(42,110,232,0.07); border-color: var(--accent2); }
+
+  .custom-check {
+    width: 20px; height: 20px; min-width: 20px;
+    border: 2px solid var(--border); border-radius: 4px;
+    margin-top: 1px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; pointer-events: none;
+  }
+  .custom-check svg { display: none; }
+  .check-item.is-checked .custom-check { background: var(--accent2); border-color: var(--accent2); }
+  .check-item.is-checked .custom-check svg { display: block; }
+
+  .item-label { font-size: 15px; font-weight: 400; color: var(--ink); line-height: 1.5; flex: 1; pointer-events: none; }
+  .inline-input {
+    pointer-events: all;
+    border: none; border-bottom: 1.5px solid var(--border); border-radius: 0;
+    padding: 1px 4px; font-size: 14px; width: 150px;
+    background: transparent; display: inline-block; vertical-align: baseline;
+  }
+  .inline-input:focus { border-bottom-color: var(--accent2); outline: none; box-shadow: none; }
+
+  /* Radio */
+  .radio-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: 6px;
+    border: 1.5px solid var(--border); background: #fff;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .radio-item:hover { background: #eef3fd; border-color: rgba(42,110,232,0.3); }
+  .radio-item.is-selected { background: rgba(42,110,232,0.07); border-color: var(--accent2); }
+  .custom-radio {
+    width: 20px; height: 20px; min-width: 20px;
+    border: 2px solid var(--border); border-radius: 50%;
+    margin-top: 1px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; pointer-events: none;
+  }
+  .radio-item.is-selected .custom-radio { border-color: var(--accent2); }
+  .radio-dot { width: 9px; height: 9px; background: var(--accent2); border-radius: 50%; transform: scale(0); transition: transform 0.15s; }
+  .radio-item.is-selected .radio-dot { transform: scale(1); }
+
+  /* Buttons */
+  .nav-wrap { display: flex; justify-content: space-between; align-items: center; margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px; border-radius: 5px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.18s; letter-spacing: 0.03em; }
+  .btn-outline { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--ink); color: var(--ink); }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #1d7048; }
+
+  /* Dot nav */
+  .dot-nav { display: flex; gap: 6px; align-items: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
+  .dot.done { background: var(--accent2); }
+  .dot.active { background: var(--accent); width: 20px; border-radius: 4px; }
+
+  /* Summary */
+  .summary-block { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 14px; }
+  .summary-block h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .summary-block p, .summary-block li { font-size: 14px; color: var(--ink); line-height: 1.6; }
+  .summary-block ul { padding-left: 18px; }
+  .empty-val { color: var(--muted); font-style: italic; }
+
+  @media print {
+    .progress-wrap, .nav-wrap { display: none !important; }
+    .step { display: block !important; margin-bottom: 24px; }
+    body { padding: 0; background: white; }
+    .summary-block { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <div><div class="header-badge">Cadrage IA</div></div>
+  <h1>Questionnaire – <em>Usage d'IA</em></h1>
+</div>
+<div class="progress-wrap">
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+  <div class="progress-label" id="progressLabel">Étape 1 sur 9</div>
+</div>
+
+<div class="container"><div class="steps">
+
+<!-- Q1 -->
+<div class="step active" data-step="1">
+  <div class="section-num">Question 1 / 9</div>
+  <div class="section-title">Quel est le processus administratif concerné ?</div>
+  <div class="card">
+    <label class="field-label" for="processus">Décrivez comment ce processus fonctionne aujourd'hui</label>
+    <textarea id="processus" placeholder="Décrivez le processus actuel…"></textarea>
+  </div>
+  <div class="nav-wrap">
+    <div></div>
+    <div class="dot-nav" id="dots1"></div>
+    <button class="btn btn-primary" data-goto="2">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="step" data-step="2">
+  <div class="section-num">Question 2 / 9</div>
+  <div class="section-title">Quel problème souhaites-tu résoudre ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Gagner du temps (si possible, préciser combien :)&nbsp;</span></div>
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Améliorer la qualité du service rendu</span></div>
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Réduire les erreurs</span></div>
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Rendre l'expérience plus simple pour les utilisateurs</span></div>
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Simplifier le travail des agents</span></div>
+    <div class="check-item" data-name="probleme"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Autre :&nbsp;<input type="text" class="inline-input" placeholder="préciser…"></span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="1">← Précédent</button>
+    <div class="dot-nav" id="dots2"></div>
+    <button class="btn btn-primary" data-goto="3">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="step" data-step="3">
+  <div class="section-num">Question 3 / 9</div>
+  <div class="section-title">Le besoin est-il confirmé et partagé ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="besoin"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Une enquête ou des retours utilisateurs ont été recueillis</span></div>
+    <div class="check-item" data-name="besoin"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Des demandes récurrentes ont été identifiées</span></div>
+    <div class="check-item" data-name="besoin"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">La hiérarchie valide le besoin</span></div>
+    <div class="check-item" data-name="besoin"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Le projet est cohérent avec la stratégie de l'organisation</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="2">← Précédent</button>
+    <div class="dot-nav" id="dots3"></div>
+    <button class="btn btn-primary" data-goto="4">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="step" data-step="4">
+  <div class="section-num">Question 4 / 9</div>
+  <div class="section-title">Quel type de tâche l'IA devrait-elle accomplir ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Générer du contenu (comptes‑rendus, courriers, rapports…)</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Résumer ou synthétiser des documents</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Extraire des informations précises dans des documents</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Aider à rédiger ou reformuler des textes</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Traduire</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Classer ou catégoriser des informations</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Répondre à des questions (type chatbot)</span></div>
+    <div class="check-item" data-name="tache"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Autre :&nbsp;<input type="text" class="inline-input" placeholder="préciser…"></span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="3">← Précédent</button>
+    <div class="dot-nav" id="dots4"></div>
+    <button class="btn btn-primary" data-goto="5">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="step" data-step="5">
+  <div class="section-num">Question 5 / 9</div>
+  <div class="section-title">Quel niveau d'autonomie est envisagé ?</div>
+  <div class="card"><div class="radio-group">
+    <div class="radio-item" data-name="autonomie"><div class="custom-radio"><div class="radio-dot"></div></div><span class="item-label">L'IA assiste uniquement (l'humain décide toujours)</span></div>
+    <div class="radio-item" data-name="autonomie"><div class="custom-radio"><div class="radio-dot"></div></div><span class="item-label">L'IA propose, l'humain valide</span></div>
+    <div class="radio-item" data-name="autonomie"><div class="custom-radio"><div class="radio-dot"></div></div><span class="item-label">L'IA automatise une partie du travail, sous supervision</span></div>
+    <div class="radio-item" data-name="autonomie"><div class="custom-radio"><div class="radio-dot"></div></div><span class="item-label">L'IA automatise complètement (cas très spécifiques uniquement)</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="4">← Précédent</button>
+    <div class="dot-nav" id="dots5"></div>
+    <button class="btn btn-primary" data-goto="6">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="step" data-step="6">
+  <div class="section-num">Question 6 / 9</div>
+  <div class="section-title">Quels seront les critères de réussite du projet ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="criteres"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Gain de temps (objectif :&nbsp;<input type="text" class="inline-input" placeholder="_____ h/mois">)</span></div>
+    <div class="check-item" data-name="criteres"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Satisfaction des utilisateurs (objectif : &gt;&nbsp;<input type="text" class="inline-input" placeholder="______ %">)</span></div>
+    <div class="check-item" data-name="criteres"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Réduction des erreurs (objectif : -&nbsp;<input type="text" class="inline-input" placeholder="______ %">)</span></div>
+    <div class="check-item" data-name="criteres"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Nombre d'utilisations (objectif :&nbsp;<input type="text" class="inline-input" placeholder="______ / mois">)</span></div>
+    <div class="check-item" data-name="criteres"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Retour sur investissement (objectif : en&nbsp;<input type="text" class="inline-input" placeholder="______ mois">)</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="5">← Précédent</button>
+    <div class="dot-nav" id="dots6"></div>
+    <button class="btn btn-primary" data-goto="7">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="step" data-step="7">
+  <div class="section-num">Question 7 / 9</div>
+  <div class="section-title">Pourquoi choisir une solution d'IA ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="raison"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Plus flexible que les solutions classiques</span></div>
+    <div class="check-item" data-name="raison"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Bon rapport coût / bénéfice</span></div>
+    <div class="check-item" data-name="raison"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Capable de gérer des cas variés ou complexes</span></div>
+    <div class="check-item" data-name="raison"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Permet de développer de nouvelles compétences internes</span></div>
+    <div class="check-item" data-name="raison"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">S'inscrit dans une démarche d'innovation ou d'expérimentation</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="6">← Précédent</button>
+    <div class="dot-nav" id="dots7"></div>
+    <button class="btn btn-primary" data-goto="8">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q8 -->
+<div class="step" data-step="8">
+  <div class="section-num">Question 8 / 9</div>
+  <div class="section-title">Le projet implique-t-il des données sensibles ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="donnees"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Données personnelles des étudiants ou du personnel</span></div>
+    <div class="check-item" data-name="donnees"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Données RH (évaluations, salaires, dossiers individuels…)</span></div>
+    <div class="check-item" data-name="donnees"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Données stratégiques de l'établissement</span></div>
+    <div class="check-item" data-name="donnees"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Données liées à la recherche ou à la propriété intellectuelle (brevets, résultats scientifiques…)</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="7">← Précédent</button>
+    <div class="dot-nav" id="dots8"></div>
+    <button class="btn btn-primary" data-goto="9">Suivant →</button>
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="step" data-step="9">
+  <div class="section-num">Question 9 / 9</div>
+  <div class="section-title">L'outil améliore-t-il les conditions de travail ?</div>
+  <div class="card"><div class="check-group">
+    <div class="check-item" data-name="conditions"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Réduction de tâches répétitives et ingrates</span></div>
+    <div class="check-item" data-name="conditions"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Réduction du stress lié aux délais</span></div>
+    <div class="check-item" data-name="conditions"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Meilleure valorisation du travail humain</span></div>
+    <div class="check-item" data-name="conditions"><div class="custom-check"><svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4.5L3.8 7.5L10 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="item-label">Équilibre vie pro / perso amélioré</span></div>
+  </div></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="8">← Précédent</button>
+    <div class="dot-nav" id="dots9"></div>
+    <button class="btn btn-primary" id="btnSummary">Voir le récapitulatif →</button>
+  </div>
+</div>
+
+<!-- Récapitulatif -->
+<div class="step" data-step="10">
+  <div class="section-num">Récapitulatif</div>
+  <div class="section-title">Votre questionnaire de cadrage</div>
+  <div id="summaryContent"></div>
+  <div class="nav-wrap">
+    <button class="btn btn-outline" data-goto="9">← Modifier</button>
+    <div></div>
+    <button class="btn btn-success" id="btnPrint">🖨 Imprimer / Enregistrer PDF</button>
+  </div>
+</div>
+
+</div></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  var TOTAL = 9;
+  var currentStep = 1;
+
+  /* ── Navigation ── */
+  function goToStep(n) {
+    document.querySelectorAll('.step').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    var target = document.querySelector('.step[data-step="' + n + '"]');
+    if (target) {
+      target.classList.add('active');
+      currentStep = n;
+      renderDots(n);
+      updateProgress(n);
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function renderDots(n) {
+    for (var s = 1; s <= TOTAL; s++) {
+      var el = document.getElementById('dots' + s);
+      if (!el) continue;
+      var html = '';
+      for (var i = 1; i <= TOTAL; i++) {
+        if (i < n)        html += '<div class="dot done"></div>';
+        else if (i === n) html += '<div class="dot active"></div>';
+        else              html += '<div class="dot"></div>';
+      }
+      el.innerHTML = html;
+    }
+  }
+
+  function updateProgress(n) {
+    var pct = n <= TOTAL ? Math.round(((n - 1) / TOTAL) * 100) : 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent =
+      n <= TOTAL ? ('Étape ' + n + ' sur ' + TOTAL) : 'Récapitulatif';
+  }
+
+  /* Wire all [data-goto] buttons */
+  document.querySelectorAll('[data-goto]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      goToStep(parseInt(btn.getAttribute('data-goto'), 10));
+    });
+  });
+
+  /* ── Checkbox toggle ── */
+  document.addEventListener('click', function(e) {
+    var checkItem = e.target.closest('.check-item');
+    if (checkItem) {
+      if (e.target.classList.contains('inline-input')) return;
+      checkItem.classList.toggle('is-checked');
+      return;
+    }
+    var radioItem = e.target.closest('.radio-item');
+    if (radioItem) {
+      var name = radioItem.getAttribute('data-name');
+      document.querySelectorAll('.radio-item[data-name="' + name + '"]').forEach(function(r) {
+        r.classList.remove('is-selected');
+      });
+      radioItem.classList.add('is-selected');
+    }
+  });
+
+  /* ── Collect helpers ── */
+  function collectChecks(name) {
+    var out = [];
+    document.querySelectorAll('.check-item.is-checked[data-name="' + name + '"]').forEach(function(item) {
+      var lbl = item.querySelector('.item-label');
+      if (lbl) out.push(lbl.innerText.replace(/\s+/g, ' ').trim());
+    });
+    return out;
+  }
+
+  function collectRadio(name) {
+    var sel = document.querySelector('.radio-item.is-selected[data-name="' + name + '"]');
+    if (!sel) return null;
+    var lbl = sel.querySelector('.item-label');
+    return lbl ? lbl.innerText.trim() : null;
+  }
+
+  /* ── Summary ── */
+  function showSummary() {
+    var sections = [
+      { q: 'Processus administratif concerné',       val: document.getElementById('processus').value },
+      { q: 'Problème à résoudre',                    val: collectChecks('probleme') },
+      { q: 'Besoin confirmé et partagé',             val: collectChecks('besoin') },
+      { q: "Type de tâche pour l'IA",                val: collectChecks('tache') },
+      { q: "Niveau d'autonomie",                     val: collectRadio('autonomie') },
+      { q: 'Critères de réussite',                   val: collectChecks('criteres') },
+      { q: "Raisons de choisir l'IA",                val: collectChecks('raison') },
+      { q: 'Données sensibles impliquées',           val: collectChecks('donnees') },
+      { q: 'Amélioration des conditions de travail', val: collectChecks('conditions') },
+    ];
+    var html = '';
+    sections.forEach(function(s) {
+      var display;
+      if (Array.isArray(s.val)) {
+        display = s.val.length
+          ? '<ul>' + s.val.map(function(v){ return '<li>' + v + '</li>'; }).join('') + '</ul>'
+          : '<p class="empty-val">Non renseigné</p>';
+      } else {
+        display = (s.val && s.val.trim())
+          ? '<p>' + s.val + '</p>'
+          : '<p class="empty-val">Non renseigné</p>';
+      }
+      html += '<div class="summary-block"><h3>' + s.q + '</h3>' + display + '</div>';
+    });
+    document.getElementById('summaryContent').innerHTML = html;
+    goToStep(10);
+  }
+
+  document.getElementById('btnSummary').addEventListener('click', showSummary);
+  document.getElementById('btnPrint').addEventListener('click', function() { window.print(); });
+
+  /* ── Init ── */
+  renderDots(1);
+  updateProgress(1);
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
 
